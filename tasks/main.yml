@@ -1,0 +1,22 @@
+- name: Updates apt cache
+  apt: update_cache=true
+  sudo: yes
+
+- name: Installs git and goloang
+  apt: pkg={{ item }} state=latest
+  with_items:
+    - git
+    - golang
+  sudo: yes
+
+- name: checkout code
+  git: repo=https://github.com/coreos/etcd.git
+       dest={{ install_prefix }}/etcd
+       version=v0.4.1
+  sudo: yes
+
+- name: build etcd
+  shell: >
+           {{ install_prefix }}/etcd/build 
+           chdir="{{ install_prefix }}/etcd"
+  sudo: yes
