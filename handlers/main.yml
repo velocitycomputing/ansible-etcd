@@ -1,0 +1,4 @@
+---
+- name: reload etcd
+  service: name=etcd state=restarted
+  sudo: yes
