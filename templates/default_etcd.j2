@@ -1,0 +1,13 @@
+
+MY_IP_ADDR={{hostvars[ansible_hostname]['ansible_eth0']['ipv4']['address']}}
+
+ETCD_ADVERTISE_CLIENT_URLS="http://${MY_IP_ADDR}:2379"
+ETCD_LISTEN_CLIENT_URLS="http://${MY_IP_ADDR}:2379,http://localhost:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://${MY_IP_ADDR}:2380"
+ETCD_LISTEN_PEER_URLS="http://${MY_IP_ADDR}:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster-01"
+ETCD_INITIAL_CLUSTER="{% for host in groups['etcd_nodes'] %}{{ host }}=http://{{ hostvars[host]['ansible_eth0']['ipv4']['address'] }}:2380{% if not loop.last %},{% endif %}{% endfor %}"
+ETCD_INITIAL_CLUSTER_STATE="new"
+
+#ETCD_DATA_DIR="/var/etcd"
+#ETCD_NAME="{{ ansible_hostname }}"
