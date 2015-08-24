@@ -1,5 +1,13 @@
+etcd_url: https://github.com/coreos/etcd/releases/download/v2.1.1/etcd-v2.1.1-linux-amd64.tar.gz
+#etcd_untarred_folder:  etcd-v2.1.1-linux-amd64
+#etcd_url: https://github.com/coreos/etcd/releases/download/v0.4.1/etcd-v0.4.1-linux-amd64.tar.gz
+#etcd_untarred_folder:  etcd-v0.4.1-linux-amd64
+etcd_untarred_folder:  etcd-v2.1.1-linux-amd64
 etcd_install_prefix: "/opt"
+etcd_bin_folder: "/opt/etcd/bin"
 etcd_peer_addr: "127.0.0.1:7001"
 etcd_addr: "127.0.0.1:4001"
 etcd_data_dir: "{{ etcd_install_prefix }}/machine"
 etcd_peers: ""
+
+is_docker: True

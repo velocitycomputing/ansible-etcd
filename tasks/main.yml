@@ -1,42 +1,73 @@
-- name: Updates apt cache
-  apt: update_cache=true
-  sudo: yes
+# binaries don't need compilers  
+# - name: Installs git and goloang
+#   apt: pkg={{ item }} state=latest
+#   with_items:
+#     - git
+#     - golang
 
-- name: Installs git and goloang
-  apt: pkg={{ item }} state=latest
+# - name: check whether already installed
+#   stat: path={{ etcd_install_prefix }}/etcd/installed.ok
+#   register: etcd_installed
+
+# 0.4.1 builds but doesn't include etcdctl; other versions have issues
+# - name: checkout code
+#   git: repo=https://github.com/coreos/etcd.git
+#        dest={{ etcd_install_prefix }}/etcd
+#        #version=v2.0.9
+#        #version=v0.4.1
+#   when: etcd_installed.stat.exists != true
+
+# - name: build etcd
+#   shell: >
+#            {{ etcd_install_prefix }}/etcd/build 
+#            chdir="{{ etcd_install_prefix }}/etcd"
+#   when: etcd_installed.stat.exists != true
+
+#- name: download binaries
+#  get_url: url=https://github.com/coreos/etcd/releases/download/v2.1.1/etcd-v2.1.1-linux-amd64.tar.gz dest=/opt/etcd-v2.1.1-linux-amd64.tar.gz
+
+- name: create etcd dir
+  file: path=/opt/etcd state=directory
+- name: create etcd bin dir
+  file: path=/opt/etcd/bin state=directory  
+  
+- name: download binaries
+  unarchive: src={{ etcd_url }} dest=/opt/etcd copy=no creates={{ etcd_install_prefix }}/etcd/{{ etcd_untarred_folder }}/etcd
+
+- name: link binaries
+  file: src={{ etcd_install_prefix }}/etcd/{{ etcd_untarred_folder }}/{{ item }} dest={{ etcd_install_prefix }}/etcd/bin/{{ item }} state=link
   with_items:
-    - git
-    - golang
-  sudo: yes
-
-- name: check whether already installed
-  stat: path={{ etcd_install_prefix }}/etcd/installed.ok
-  register: etcd_installed
-
-- name: checkout code
-  git: repo=https://github.com/coreos/etcd.git
-       dest={{ etcd_install_prefix }}/etcd
-       version=v0.4.1
-  sudo: yes
-  when: etcd_installed.stat.exists != true
-
-- name: build etcd
-  shell: >
-           {{ etcd_install_prefix }}/etcd/build 
-           chdir="{{ etcd_install_prefix }}/etcd"
-  sudo: yes
-  when: etcd_installed.stat.exists != true
-
-- name: mark as installed
-  file: path={{ etcd_install_prefix }}/etcd/installed.ok mode=0644 state=touch
-  sudo: yes
+    - etcd
+    - etcdctl
+#- name: mark as installed
+#  file: path={{ etcd_install_prefix }}/etcd/installed.ok mode=0644 state=touch
 
 - name: setup etcd in /etc/init
-  template: src=upstart_etcd.j2 dest=/etc/init/etcd.conf mode=0644
+  template: src=upstart_etcd.j2 dest=/etc/init/etcd mode=0644
   notify:
     - reload etcd
-  sudo: yes
+  when: is_docker is not defined or is_docker == False
+
+- name: setup etcd in /etc/init.d
+  template: src=initd_etcd.j2 dest=/etc/init.d/etcd mode=0755
+  notify:
+    - reload etcd
+  when: is_docker is defined
+  
+- name: put in environment file  
+  template: src=default_etcd.j2 dest=/etc/default/etcd mode=0644
+  notify:
+    - reload etcd
 
 - name: ensure etcd is started
   service: name=etcd state=started
-  sudo: yes
+
+- name: add "{{ etcd_bin_folder }}" to path
+  lineinfile: >-
+    dest=/etc/environment
+    state=present
+    backrefs=yes
+    regexp='PATH=(["]*)((?!.*?{{etcd_bin_folder}}).*?)(["]*)$'
+    line="PATH=\1\2:{{etcd_bin_folder}}\3"  
+
+    
